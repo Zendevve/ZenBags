@@ -240,17 +240,36 @@ function Frames:Update()
             SetItemButtonTexture(btn, itemData.texture)
             SetItemButtonCount(btn, itemData.count)
             
-            -- Quality Border
-            if itemData.quality and itemData.quality > 1 then
+            -- Quality/Quest Border
+            local isQuestItem, questId, isActive = GetContainerItemQuestInfo(itemData.bagID, itemData.slotID)
+            if questId and not isActive then
+                btn.IconBorder:SetTexture(TEXTURE_ITEM_QUEST_BANG)
+                btn.IconBorder:SetVertexColor(1, 1, 1)
+                btn.IconBorder:Show()
+            elseif questId or isQuestItem then
+                btn.IconBorder:SetTexture(TEXTURE_ITEM_QUEST_BORDER)
+                btn.IconBorder:SetVertexColor(1, 1, 1)
+                btn.IconBorder:Show()
+            elseif itemData.quality and itemData.quality > 1 then
                 local r, g, b = GetItemQualityColor(itemData.quality)
-                if btn.IconBorder then
-                    btn.IconBorder:SetVertexColor(r, g, b)
-                    btn.IconBorder:Show()
-                end
+                btn.IconBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+                btn.IconBorder:SetVertexColor(r, g, b)
+                btn.IconBorder:Show()
             else
-                if btn.IconBorder then
-                    btn.IconBorder:Hide()
+                btn.IconBorder:Hide()
+            end
+            
+            -- Cooldown
+            if btn.cooldown then
+                ContainerFrame_UpdateCooldown(itemData.bagID, btn)
+            else
+                -- Create cooldown if missing (ContainerFrameItemButtonTemplate usually has it as $parentCooldown)
+                -- But since we might need to ensure it exists:
+                if not btn.Cooldown then
+                    btn.Cooldown = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
+                    btn.Cooldown:SetAllPoints()
                 end
+                ContainerFrame_UpdateCooldown(itemData.bagID, btn)
             end
             
             -- Junk Overlay
